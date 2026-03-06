@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS ISP - Painel Administrativo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #0f172a; --accent: #3b82f6; }
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .sidebar-item { transition: 0.2s; cursor: pointer; }
+        .sidebar-item:hover { background: #1e293b; color: white; }
+        .sidebar-item.active { background: #3b82f6; color: white; }
+        .content-section { display: none; }
+        .content-section.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="flex h-screen items-center justify-center bg-slate-900 px-4">
+        <div class="glass w-full max-w-md rounded-2xl p-8 shadow-2xl">
+            <div class="mb-8 text-center">
+                <div class="inline-block rounded-full bg-blue-600 p-4 mb-4">
+                    <i class="fas fa-robot text-3xl text-white"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-800">SaaS Chatbot ISP</h1>
+                <p class="text-slate-500 text-sm">Acesse o painel do seu provedor</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+    <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <i class="fas fa-user"></i>
+        </span>
+        <input type="text" id="email" placeholder="Usuário" class="w-full rounded-lg border p-3 pl-10 outline-none focus:ring-2 focus:ring-blue-500" required>
+    </div>
+    
+    <div class="relative">
+        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+            <i class="fas fa-lock"></i>
+        </span>
+        <input type="password" id="password" placeholder="Senha" class="w-full rounded-lg border p-3 pl-10 pr-10 outline-none focus:ring-2 focus:ring-blue-500" required>
+        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-blue-500">
+            <i id="eyeIcon" class="fas fa-eye"></i>
+        </button>
+    </div>
+    
+    <button type="submit" id="btnLogin" class="w-full rounded-lg bg-blue-600 p-3 font-bold text-white hover:bg-blue-700 transition shadow-lg">
+        ENTRAR NO PAINEL
+    </button>
+</form>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden flex h-screen overflow-hidden">
+        
+        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col">
+            <div class="p-6 text-xl font-bold text-white border-b border-slate-800 flex items-center">
+                <i class="fas fa-network-wired mr-2 text-blue-500"></i> ISP SaaS
+            </div>
+            <nav class="flex-1 p-4 space-y-2">
+                <div onclick="showSection('sec-dados', this)" class="sidebar-item active p-3 rounded-lg flex items-center">
+                    <i class="fas fa-building w-6"></i> Dados Provedor
+                </div>
+                <div onclick="showSection('sec-vendas', this)" class="sidebar-item p-3 rounded-lg flex items-center">
+                    <i class="fas fa-shopping-cart w-6"></i> Vendas e Planos
+                </div>
+                <div onclick="showSection('sec-prompt', this)" class="sidebar-item p-3 rounded-lg flex items-center">
+                    <i class="fas fa-robot w-6"></i> Prompt Agente
+                </div>
+                <div onclick="showSection('sec-conexao', this)" class="sidebar-item p-3 rounded-lg flex items-center">
+                    <i class="fab fa-whatsapp w-6"></i> Conexão Zap
+                </div>
+                <div onclick="showSection('sec-campanhas', this)" class="sidebar-item p-3 rounded-lg flex items-center">
+    <i class="fas fa-bullhorn w-6"></i> Campanhas e Mídias
+</div>
+                <div onclick="showSection('sec-financeiro', this)" class="sidebar-item p-3 rounded-lg flex items-center">
+                    <i class="fas fa-credit-card w-6"></i> Meu Plano SaaS
+                </div>
+            </nav>
+            <div class="p-4 border-t border-slate-800">
+                <div id="userDisplay" class="text-xs text-blue-400 mb-2 truncate">---</div>
+                <button onclick="logout()" class="w-full text-left p-2 text-sm hover:text-red-400 transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Sair
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto p-8 bg-slate-50">
+            <header class="mb-8 flex justify-between items-center">
+                <div>
+                    <h2 id="sectionTitle" class="text-2xl font-bold text-slate-800">Dados do Provedor</h2>
+                    <p id="provedorNome" class="text-blue-600 font-bold">Carregando...</p>
+                </div>
+            </header>
+
+            <section id="sec-dados" class="content-section active space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border max-w-4xl">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nome para a IA (Persona)</label>
+                                <input type="text" id="nome_exibicao_ai" class="w-full border p-2 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Telefone de Suporte</label>
+                                <input type="text" id="telefone_contato" class="w-full border p-2 rounded-lg">
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Endereço Completo</label>
+                                <input type="text" id="endereco_completo" class="w-full border p-2 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sistema ERP</label>
+                                <select id="erpTipo" class="w-full border p-2 rounded-lg">
+                                    <option value="beesweb">Beesweb</option>
+                                    <option value="mk">MK Solutions</option>
+                                    <option value="sgp">SGP</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="salvarConfig()" class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">SALVAR DADOS</button>
+                </div>
+            </section>
+
+            <section id="sec-vendas" class="content-section space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border max-w-4xl">
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2"><i class="fas fa-tags mr-2"></i>Variáveis do Prompt</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Link do Vídeo Demonstrativo</label>
+                                <input type="text" id="link_video_demonstracao" class="w-full border p-2 rounded-lg" placeholder="Ex: https://youtube.com/...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Taxa de Instalação</label>
+                                <input type="text" id="taxa_instalacao" class="w-full border p-2 rounded-lg" placeholder="Ex: R$ 50,00">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Link do Formulário (Vendas)</label>
+                                <input type="text" id="link_formulario_contratacao" class="w-full border p-2 rounded-lg" placeholder="Ex: https://abre.ai/cadastro">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Descrição dos Planos (IA)</label>
+                            <textarea id="planos_texto" rows="7" class="w-full border p-2 rounded-lg text-sm" placeholder="200MB - R$ 70..."></textarea>
+                        </div>
+                    </div>
+                    <button onclick="salvarConfig()" class="mt-6 bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700 transition">ATUALIZAR VENDAS</button>
+                </div>
+            </section>
+
+<section id="sec-prompt" class="content-section space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl">
+        
+        <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border">
+            <h3 class="font-bold text-slate-700 mb-4 uppercase text-sm letter-spacing-wide">
+                <i class="fas fa-robot mr-2 text-blue-600"></i>Instruções do Agente
+            </h3>
+
+            <textarea id="promptAgente" rows="18" 
+                class="w-full border p-4 rounded-lg bg-slate-50 text-slate-700 font-mono text-sm outline-none focus:ring-2 focus:ring-blue-500 shadow-inner"
+                placeholder="Ex: Você é o assistente da {nome_empresa}..."></textarea>
+            
+            <button onclick="salvarConfig()" class="mt-4 w-full bg-blue-600 text-white py-4 rounded-lg font-bold hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2">
+                <i class="fas fa-save"></i> SALVAR CONFIGURAÇÕES DO AGENTE
+            </button>
+        </div>
+
+        <div class="bg-[#0f172a] text-white p-6 rounded-xl shadow-xl border border-slate-800">
+            <h4 class="text-sm font-bold mb-6 flex items-center text-blue-400 border-b border-slate-700 pb-2">
+                <i class="fas fa-tags mr-2"></i> VARIÁVEIS DISPONÍVEIS
+            </h4>
+            
+            <div class="space-y-6">
+                <div class="group">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-slate-500 text-[10px] font-bold uppercase">Empresa</span>
+                        <button draggable="true" ondragstart="drag(event, '{nome_empresa}')" onclick="insertVar('{nome_empresa}')" class="text-[10px] bg-blue-600/20 text-blue-400 border border-blue-600/30 px-2 py-0.5 rounded hover:bg-blue-600 hover:text-white transition cursor-move">
+                            {nome_empresa}
+                        </button>
+                    </div>
+                    <p id="preview-nome" class="text-xs text-slate-300 italic truncate pl-1 border-l-2 border-slate-700 group-hover:border-blue-500 transition">---</p>
+                </div>
+
+                <div class="group">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-slate-500 text-[10px] font-bold uppercase">Suporte</span>
+                        <button draggable="true" ondragstart="drag(event, '{telefone_suporte}')" onclick="insertVar('{telefone_suporte}')" class="text-[10px] bg-green-600/20 text-green-400 border border-green-600/30 px-2 py-0.5 rounded hover:bg-green-600 hover:text-white transition cursor-move">
+                            {telefone_suporte}
+                        </button>
+                    </div>
+                    <p id="preview-telefone" class="text-xs text-slate-300 italic pl-1 border-l-2 border-slate-700 group-hover:border-green-500 transition">---</p>
+                </div>
+
+                <div class="group">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-slate-500 text-[10px] font-bold uppercase">Link Vendas</span>
+                        <button draggable="true" ondragstart="drag(event, '{link_vendas}')" onclick="insertVar('{link_vendas}')" class="text-[10px] bg-purple-600/20 text-purple-400 border border-purple-600/30 px-2 py-0.5 rounded hover:bg-purple-600 hover:text-white transition cursor-move">
+                            {link_vendas}
+                        </button>
+                    </div>
+                    <p id="preview-link" class="text-xs text-slate-300 italic truncate pl-1 border-l-2 border-slate-700 group-hover:border-purple-500 transition">---</p>
+                </div>
+
+                <div class="group">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-slate-500 text-[10px] font-bold uppercase">Vídeo Demo</span>
+                        <button draggable="true" ondragstart="drag(event, '{link_video}')" onclick="insertVar('{link_video}')" class="text-[10px] bg-red-600/20 text-red-400 border border-red-600/30 px-2 py-0.5 rounded hover:bg-red-600 hover:text-white transition cursor-move">
+                            {link_video}
+                        </button>
+                    </div>
+                    <p id="preview-video" class="text-xs text-slate-300 italic truncate pl-1 border-l-2 border-slate-700 group-hover:border-red-500 transition">---</p>
+                </div>
+
+                <div class="group">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-slate-500 text-[10px] font-bold uppercase">Lista Planos</span>
+                        <button draggable="true" ondragstart="drag(event, '{planos_texto}')" onclick="insertVar('{planos_texto}')" class="text-[10px] bg-orange-600/20 text-orange-400 border border-orange-600/30 px-2 py-0.5 rounded hover:bg-orange-600 hover:text-white transition cursor-move">
+                            {planos_texto}
+                        </button>
+                    </div>
+                    <div id="preview-planos" class="text-[10px] text-slate-400 italic pl-1 border-l-2 border-slate-700 h-16 overflow-y-auto group-hover:border-orange-500 transition">---</div>
+                </div>
+            </div>
+
+            <div class="mt-8 p-3 bg-blue-900/20 border border-blue-800/30 rounded-lg">
+                <p class="text-[9px] text-blue-300 leading-tight">
+                    <i class="fas fa-info-circle mr-1"></i> <strong>DICA:</strong> Você pode clicar no botão da variável ou arrastá-lo diretamente para o ponto desejado no texto.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+            <section id="sec-conexao" class="content-section space-y-6">
+    <div class="bg-white p-8 rounded-xl shadow-sm border max-w-md mx-auto text-center">
+        <div class="mb-6">
+            <i class="fab fa-whatsapp text-6xl text-green-500 mb-4"></i>
+            <h3 class="text-xl font-bold text-slate-800">Conexão WhatsApp</h3>
+            <p class="text-slate-500 text-sm">Selecione o motor de envio e gere o QR Code.</p>
+        </div>
+
+        <div class="text-left mb-6">
+            <label class="block text-xs font-bold uppercase text-slate-500 mb-2">API de Conexão</label>
+            <select id="api-selecionada" class="w-full border p-3 rounded-lg bg-slate-50 border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer">
+                <option value="evolution" selected>Evolution API (Recomendado)</option>
+                <option value="uazapi">Uazapi (Vega)</option>
+                <option value="waha">WAHA (Web-Automated)</option>
+            </select>
+        </div>
+
+        <button onclick="gerarConexaoWhatsApp(event)" id="btnGerarQR" class="w-full bg-slate-900 text-white p-4 rounded-xl font-bold hover:bg-black transition-all shadow-lg">
+            <i class="fas fa-qrcode mr-2"></i> GERAR QR CODE
+        </button>
+
+        <div id="container-qr" class="hidden mt-8 p-4 border-2 border-dashed border-slate-200 rounded-2xl">
+            <img id="elemento-qr" class="w-64 h-64 mx-auto mb-4 rounded-lg shadow-sm">
+            <p id="status-conexao" class="text-orange-500 font-bold text-sm animate-pulse">Aguardando leitura...</p>
+        </div>
+    </div>
+</section>
+
+<section id="sec-campanhas" class="content-section space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border max-w-4xl">
+        <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">
+            <i class="fas fa-images mr-2"></i> Galeria de Mídias e Campanhas
+        </h3>
+        
+        <div class="mb-6 p-4 border-2 border-dashed border-blue-100 rounded-lg bg-blue-50">
+            <label class="block text-sm font-bold text-slate-600 mb-2">Subir Nova Imagem/Promoção</label>
+            <div class="flex gap-2">
+                <input type="file" id="input-midia" class="flex-1 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                <button onclick="uploadMidia()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700">SUBIR</button>
+            </div>
+        </div>
+
+        <div id="lista-midias" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            </div>
+
+        <div class="mt-8 pt-6 border-t">
+            <h4 class="font-bold text-slate-700 mb-3">Disparar Campanha</h4>
+            <textarea id="msg-campanha" placeholder="Texto da sua promoção..." class="w-full border p-3 rounded-lg text-sm mb-3" rows="3"></textarea>
+            <button onclick="enviarCampanha()" class="w-full bg-green-600 text-white p-3 rounded-lg font-bold hover:bg-green-700 transition">
+                <i class="fas fa-paper-plane mr-2"></i> INICIAR DISPARO EM MASSA
+            </button>
+        </div>
+    </div>
+</section>
+
+            <section id="sec-financeiro" class="content-section space-y-6">
+                <div class="bg-white p-8 rounded-xl shadow-sm border max-w-4xl text-center">
+                    <i class="fas fa-lock text-4xl text-slate-300 mb-4"></i>
+                    <h3 class="text-xl font-bold">Portal do Assinante SaaS</h3>
+                    <p class="text-slate-500 text-sm">Em breve: Gerencie seu pagamento por aqui.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    
+    
+
+    <script>
+    const _url = "https://dcenqdezgufjhchhcqvs.supabase.co";
+    const _key = "sb_publishable_ulc2qkllcbwT82JojIkQAg_V0X5xTsP";
+    const supabaseClient = supabase.createClient(_url, _key);
+
+    let currentTenantId = null;
+    let slugEmpresaLogada = "";
+    let intervaloTimer; // Variável global para o timer que você solicitou
+
+    function showSection(id, element) {
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        element.classList.add('active');
+        document.getElementById('sectionTitle').innerText = element.innerText;
+    }
+
+    document.getElementById('loginForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const login = document.getElementById('email').value.trim();
+        const senha = document.getElementById('password').value.trim();
+        const btn = document.getElementById('btnLogin');
+        btn.innerText = "Validando...";
+
+        const { data, error } = await supabaseClient
+            .from('tenants')
+            .select('*')
+            .eq('login_usuario', login)
+            .eq('senha', senha)
+            .maybeSingle();
+
+        if (error || !data) {
+            alert("Usuário ou senha inválidos.");
+            btn.innerText = "ENTRAR NO PAINEL";
+        } else {
+            localStorage.setItem('usuarioSaaS', JSON.stringify(data));
+            abrirPainel(data);
+        }
+    };
+
+    function abrirPainel(data) {
+    // 1. Troca de Telas
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('dashboard').classList.remove('hidden');
+    
+    // 2. Armazenamento de Estado
+    currentTenantId = data.id;
+    slugEmpresaLogada = data.slug;
+    
+    // 3. Cabeçalho e Identificação
+    document.getElementById('userDisplay').innerText = data.login_usuario;
+    // Unificação conforme sua solicitação: usa o nome da IA no título azul
+    document.getElementById('provedorNome').innerText = data.nome_exibicao_ai || "Provedor sem nome";
+    
+    // 4. Preenchimento da Aba: Dados do Provedor
+    document.getElementById('nome_exibicao_ai').value = data.nome_exibicao_ai || "";
+    document.getElementById('telefone_contato').value = data.telefone_contato || "";
+    document.getElementById('endereco_completo').value = data.endereco_completo || "";
+    document.getElementById('erpTipo').value = data.erp_tipo || "beesweb";
+    
+    // 5. Preenchimento da Aba: Vendas e Planos
+    document.getElementById('link_video_demonstracao').value = data.link_video_demonstracao || "";
+    document.getElementById('taxa_instalacao').value = data.taxa_instalacao || "";
+    document.getElementById('link_formulario_contratacao').value = data.link_formulario_contratacao || "";
+    document.getElementById('planos_texto').value = data.planos_texto || "";
+
+    // 6. Preenchimento da Aba: Prompt Agente
+    document.getElementById('promptAgente').value = data.prompt_agente || "";
+
+    // 7. ✅ ATUALIZADO: Resumo de Variáveis (Preview Lateral no Prompt)
+    if (document.getElementById('preview-nome')) {
+        document.getElementById('preview-nome').innerText = data.nome_exibicao_ai || "(vazio)";
+        document.getElementById('preview-telefone').innerText = data.telefone_contato || "(vazio)";
+        document.getElementById('preview-link').innerText = data.link_formulario_contratacao || "(vazio)";
+        document.getElementById('preview-planos').innerText = data.planos_texto || "Nenhum plano listado";
+        
+        // Adicionando o Link do Vídeo no resumo
+        if (document.getElementById('preview-video')) {
+            document.getElementById('preview-video').innerText = data.link_video_demonstracao || "(sem vídeo)";
+        }
+    }
+}
+
+    async function salvarConfig() {
+        const { error } = await supabaseClient.from('tenants').update({
+            nome_exibicao_ai: document.getElementById('nome_exibicao_ai').value,
+            telefone_contato: document.getElementById('telefone_contato').value,
+            endereco_completo: document.getElementById('endereco_completo').value,
+            erp_tipo: document.getElementById('erpTipo').value,
+            prompt_agente: document.getElementById('promptAgente').value,
+            link_video_demonstracao: document.getElementById('link_video_demonstracao').value,
+            taxa_instalacao: document.getElementById('taxa_instalacao').value,
+            link_formulario_contratacao: document.getElementById('link_formulario_contratacao').value,
+            planos_texto: document.getElementById('planos_texto').value
+        }).eq('id', currentTenantId);
+
+        if (error) alert("Erro ao salvar!"); else alert("Configurações atualizadas!");
+    }
+
+    // ✅ FUNÇÃO DE QR CODE COM TIMER RESTAURADA E MELHORADA
+    async function gerarConexaoWhatsApp(event) {
+    // Referências dos elementos
+    const btn = event.currentTarget; // Usamos currentTarget para garantir o elemento do botão
+    const apiEscolhida = document.getElementById('api-selecionada').value; 
+    const containerQr = document.getElementById('container-qr');
+    const imgQr = document.getElementById('elemento-qr');
+    const statusMsg = document.getElementById('status-conexao');
+
+    // Usamos o slug que foi definido no momento do login (abrirPainel)
+    const slug = slugEmpresaLogada;
+
+    if (!slug) {
+        alert("Erro: Faça login novamente. Slug não encontrado.");
+        return;
+    }
+
+    // Limpa qualquer timer rodando
+    if (intervaloTimer) clearInterval(intervaloTimer);
+
+    btn.innerText = "⏳ Gerando...";
+    btn.disabled = true;
+
+    try {
+        // Envio idêntico ao GSYN: slug e api selecionada
+        const urlN8n = `https://n8n.vps6993.panel.icontainer.net/webhook/obter-qr-evo?slug=${slug}&api=${apiEscolhida}`;
+        
+        const response = await fetch(urlN8n);
+        let data = await response.text();
+
+        // Tratamento de segurança caso o n8n responda em JSON
+        try {
+            const jsonData = JSON.parse(data);
+            if (jsonData.base64_final) data = jsonData.base64_final;
+        } catch (e) {
+            // Se não for JSON, segue com o texto puro (base64)
+        }
+
+        if (data.startsWith('data:image')) {
+            containerQr.classList.remove('hidden');
+            containerQr.style.display = 'block';
+            imgQr.src = data;
+            btn.innerText = "🔄 Atualizar QR Code";
+            btn.classList.replace('bg-slate-900', 'bg-blue-600');
+
+            let tempoRestante = 60;
+            statusMsg.innerText = `Aguardando leitura (Expira em ${tempoRestante}s)...`;
+
+            intervaloTimer = setInterval(() => {
+                tempoRestante--;
+                statusMsg.innerText = `Aguardando leitura (Expira em ${tempoRestante}s)...`;
+
+                if (tempoRestante <= 0) {
+                    clearInterval(intervaloTimer);
+                    imgQr.src = '';
+                    containerQr.style.display = 'none';
+                    statusMsg.innerText = "O QR Code expirou. Gere um novo.";
+                    btn.innerText = "🔄 Gerar Novo QR Code";
+                    btn.classList.replace('bg-blue-600', 'bg-orange-500');
+                }
+            }, 1000);
+
+        } else if (data.toLowerCase().includes("connected") || data.toLowerCase().includes("open")) {
+            containerQr.style.display = 'none';
+            statusMsg.innerText = "✅ WhatsApp conectado!";
+            btn.innerText = "✅ Conectado";
+            btn.style.background = "#064e3b"; // Verde escuro
+            btn.disabled = true;
+        } else {
+            alert("Aviso: " + data);
+            btn.innerText = "🔄 Gerar QR Code WhatsApp";
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error("Erro na conexão:", error);
+        alert("Erro ao conectar com o servidor.");
+        btn.innerText = "🔄 Tentar Novamente";
+        btn.disabled = false;
+    }
+}
+
+function showSection(id, element) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    element.classList.add('active');
+    document.getElementById('sectionTitle').innerText = element.innerText;
+
+    // ✅ NOVO: Se entrar na aba de conexão, limpa o estado anterior
+    if (id === 'sec-conexao') {
+        resetBotaoQR();
+    }
+}
+
+// Função para mostrar/esconder senha
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const eyeIcon = document.getElementById('eyeIcon');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        passwordInput.type = 'password';
+        eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+
+// Melhore o log do seu onsubmit para entender o erro de login
+document.getElementById('loginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const login = document.getElementById('email').value.trim();
+    const senha = document.getElementById('password').value.trim();
+    const btn = document.getElementById('btnLogin');
+    
+    btn.innerText = "Validando...";
+    btn.disabled = true;
+
+    try {
+        const { data, error } = await supabaseClient
+            .from('tenants')
+            .select('*')
+            .eq('login_usuario', login)
+            .eq('senha', senha)
+            .maybeSingle();
+
+        if (error) {
+            console.error("Erro Supabase:", error);
+            alert("Erro técnico ao conectar. Verifique o console.");
+        } else if (!data) {
+            alert("Usuário ou senha não encontrados.");
+        } else {
+            localStorage.setItem('usuarioSaaS', JSON.stringify(data));
+            abrirPainel(data);
+        }
+    } catch (err) {
+        console.error("Erro inesperado:", err);
+    } finally {
+        btn.innerText = "ENTRAR NO PAINEL";
+        btn.disabled = false;
+    }
+};
+
+function insertVar(variable) {
+    const textarea = document.getElementById('promptAgente');
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    // Insere no meio do texto
+    textarea.value = text.substring(0, start) + variable + text.substring(end);
+
+    // Reposiciona o cursor logo após a variável inserida
+    textarea.focus();
+    const newPos = start + variable.length;
+    textarea.setSelectionRange(newPos, newPos);
+}
+
+// Função para preparar o dado que está sendo arrastado
+function drag(ev, text) {
+    ev.dataTransfer.setData("text", text);
+}
+
+// Configuração necessária no carregamento da página
+document.addEventListener("DOMContentLoaded", function() {
+    const area = document.getElementById('promptAgente');
+    
+    // Permite que o campo receba o objeto arrastado
+    area.addEventListener('dragover', (e) => e.preventDefault());
+
+    // Executa a inserção quando o usuário solta a tag
+    area.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData("text");
+        const start = area.selectionStart;
+        area.value = area.value.substring(0, start) + data + area.value.substring(area.selectionEnd);
+        area.focus();
+        area.setSelectionRange(start + data.length, start + data.length);
+    });
+});
+
+async function uploadMidia() {
+    const file = document.getElementById('input-midia').files[0];
+    if (!file) return alert("Selecione um arquivo");
+
+    // Criamos um caminho organizado por ID do cliente (tenant)
+    const fileName = `${currentTenantId}/${Date.now()}_${file.name}`;
+    
+    // 1. Sobe para o Storage
+    const { data: storageData, error: storageError } = await supabaseClient.storage
+        .from('midias-saas')
+        .upload(fileName, file);
+
+    if (storageError) {
+        console.error(storageError);
+        return alert("Erro ao subir para o Storage: " + storageError.message);
+    }
+
+    // 2. Pega a URL Pública gerada
+    const { data: urlData } = supabaseClient.storage
+        .from('midias-saas')
+        .getPublicUrl(fileName);
+
+    const publicUrl = urlData.publicUrl;
+
+    // 3. AGORA SIM: Salva a referência na tabela do banco de dados
+    const { error: dbError } = await supabaseClient
+        .from('midias_campanhas')
+        .insert([
+            { 
+                tenant_id: currentTenantId, 
+                url_publica: publicUrl, 
+                nome_arquivo: file.name,
+                tipo: file.type 
+            }
+        ]);
+
+    if (dbError) {
+        console.error(dbError);
+        return alert("Erro ao salvar no banco de dados.");
+    }
+
+    alert("Mídia salva e registrada com sucesso!");
+    
+    // Limpa o input e recarrega a galeria visual
+    document.getElementById('input-midia').value = "";
+    renderizarMidias(); 
+}
+
+async function renderizarMidias() {
+    const listaContainer = document.getElementById('lista-midias');
+    
+    // 1. Busca as mídias deste cliente no banco
+    const { data: midias, error } = await supabaseClient
+        .from('midias_campanhas')
+        .select('*')
+        .eq('tenant_id', currentTenantId)
+        .order('created_at', { ascending: false });
+
+    if (error) return console.error("Erro ao carregar mídias:", error);
+
+    // 2. Limpa o container antes de renderizar
+    listaContainer.innerHTML = "";
+
+    // 3. Cria o HTML para cada imagem com suporte a Atualizar, Copiar e Deletar
+midias.forEach(midia => {
+    const card = document.createElement('div');
+    card.className = "relative group border rounded-lg overflow-hidden bg-slate-100 shadow-sm hover:shadow-md transition";
+    
+    card.innerHTML = `
+        <img src="${midia.url_publica}" class="w-full h-32 object-cover">
+        
+        <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+            
+            <button onclick="copiarUrl('${midia.url_publica}')" 
+                    class="bg-white text-slate-800 p-2 rounded text-xs font-bold hover:bg-blue-50 transition" 
+                    title="Copiar Link">
+                <i class="fas fa-link"></i>
+            </button>
+
+            <button onclick="atualizarMidia('${midia.id}', '${midia.url_publica}')" 
+                    class="bg-blue-500 text-white p-2 rounded text-xs hover:bg-blue-600 transition" 
+                    title="Trocar Imagem">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+
+            <button onclick="deletarMidia('${midia.id}', '${midia.url_publica}')" 
+                    class="bg-red-600 text-white p-2 rounded text-xs hover:bg-red-700 transition" 
+                    title="Excluir">
+                <i class="fas fa-trash"></i>
+            </button>
+
+        </div>
+
+        <div class="p-1.5 text-[10px] text-slate-500 truncate bg-white border-t flex justify-between items-center">
+            <span class="truncate pr-1">${midia.nome_arquivo}</span>
+            <i class="fas fa-check-circle text-green-500 text-[8px]"></i>
+        </div>
+    `;
+    listaContainer.appendChild(card);
+});
+}
+
+// Função auxiliar para copiar a URL (útil para o usuário usar no prompt se quiser)
+function copiarUrl(url) {
+    navigator.clipboard.writeText(url);
+    alert("Link da imagem copiado!");
+}
+
+async function deletarMidia(id, urlPublica) {
+    if (!confirm("Tem certeza que deseja excluir esta imagem?")) return;
+
+    try {
+        // 1. Extrair o caminho do arquivo da URL pública para remover do Storage
+        // A URL geralmente é: .../storage/v1/object/public/midias-saas/tenant_id/arquivo.jpg
+        const pathParts = urlPublica.split('/midias-saas/');
+        const filePath = pathParts[1];
+
+        // 2. Remover do Storage
+        const { error: storageError } = await supabaseClient.storage
+            .from('midias-saas')
+            .remove([filePath]);
+
+        if (storageError) throw storageError;
+
+        // 3. Remover da Tabela do Banco
+        const { error: dbError } = await supabaseClient
+            .from('midias_campanhas')
+            .delete()
+            .eq('id', id);
+
+        if (dbError) throw dbError;
+
+        alert("Mídia excluída com sucesso!");
+        renderizarMidias(); // Atualiza a galeria na tela
+
+    } catch (error) {
+        console.error("Erro ao deletar:", error);
+        alert("Erro ao excluir mídia.");
+    }
+}
+
+async function atualizarMidia(id, urlAntiga) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // 1. Deletamos a antiga primeiro (para não encher o storage)
+        const pathParts = urlAntiga.split('/midias-saas/');
+        await supabaseClient.storage.from('midias-saas').remove([pathParts[1]]);
+
+        // 2. Subimos a nova
+        const fileName = `${currentTenantId}/${Date.now()}_${file.name}`;
+        const { data: storageData } = await supabaseClient.storage
+            .from('midias-saas')
+            .upload(fileName, file);
+
+        // 3. Pegamos a nova URL
+        const { data: urlData } = supabaseClient.storage
+            .from('midias-saas')
+            .getPublicUrl(fileName);
+
+        // 4. Atualizamos o registro no Banco
+        await supabaseClient
+            .from('midias_campanhas')
+            .update({ 
+                url_publica: urlData.publicUrl, 
+                nome_arquivo: file.name,
+                tipo: file.type 
+            })
+            .eq('id', id);
+
+        alert("Imagem atualizada!");
+        renderizarMidias();
+    };
+    
+    input.click();
+}
+
+
+function resetBotaoQR() {
+    const btn = document.getElementById('btnGerarQR');
+    const containerQr = document.getElementById('container-qr');
+    const statusMsg = document.getElementById('status-conexao');
+
+    // Para o timer se estiver rodando
+    if (intervaloTimer) clearInterval(intervaloTimer);
+
+    // Volta o botão ao estado inicial
+    btn.innerText = "GERAR QR CODE";
+    btn.disabled = false;
+    
+    // Remove as classes de cores de erro (laranja) ou sucesso (verde) e volta ao padrão slate-900
+    btn.classList.remove('bg-orange-500', 'bg-blue-600', 'bg-green-700');
+    btn.classList.add('bg-slate-900');
+    btn.style.background = ""; // Limpa estilos inline se houver
+
+    // Esconde o container do QR
+    containerQr.style.display = 'none';
+    containerQr.classList.add('hidden');
+    statusMsg.innerText = "Selecione o motor de envio e gere o QR Code.";
+}
+
+    function logout() { localStorage.removeItem('usuarioSaaS'); location.reload(); }
+    window.onload = () => { const salvo = localStorage.getItem('usuarioSaaS'); if (salvo) abrirPainel(JSON.parse(salvo)); };
+</script>
+</body>
+</html>
