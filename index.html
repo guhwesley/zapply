@@ -97,37 +97,72 @@
                 </div>
             </header>
 
-            <section id="sec-dados" class="content-section active space-y-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border max-w-4xl">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nome para a IA (Persona)</label>
-                                <input type="text" id="nome_exibicao_ai" class="w-full border p-2 rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Telefone de Suporte</label>
-                                <input type="text" id="telefone_contato" class="w-full border p-2 rounded-lg">
-                            </div>
-                        </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Endereço Completo</label>
-                                <input type="text" id="endereco_completo" class="w-full border p-2 rounded-lg">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Sistema ERP</label>
-                                <select id="erpTipo" class="w-full border p-2 rounded-lg">
-                                    <option value="beesweb">Beesweb</option>
-                                    <option value="mk">MK Solutions</option>
-                                    <option value="sgp">SGP</option>
-                                </select>
-                            </div>
-                        </div>
+          <section id="sec-dados" class="content-section active space-y-6">
+    <div class="bg-white p-6 rounded-xl shadow-sm border max-w-4xl">
+        
+        <div class="mb-8">
+            <h3 class="text-sm font-bold text-blue-600 uppercase mb-4 flex items-center">
+                <i class="fas fa-info-circle mr-2"></i> Informações Gerais
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Nome para a IA (Persona)</label>
+                        <input type="text" id="nome_exibicao_ai" class="w-full border p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ex: Atendente Virtual">
                     </div>
-                    <button onclick="salvarConfig()" class="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700 transition">SALVAR DADOS</button>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Telefone de Suporte</label>
+                        <input type="text" id="telefone_contato" class="w-full border p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none" placeholder="(00) 00000-0000">
+                    </div>
                 </div>
-            </section>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Endereço Completo</label>
+                    <textarea id="endereco_completo" rows="4" class="w-full border p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none resize-none" placeholder="Rua, Número, Bairro, Cidade - UF"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-6 border-t border-slate-100">
+            <h3 class="text-sm font-bold text-blue-600 uppercase mb-4 flex items-center">
+                <i class="fas fa-plug mr-2"></i> Integração do Sistema
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Tipo de ERP</label>
+                    <select id="erpTipo" onchange="ajustarCamposERP()" class="w-full border p-2.5 rounded-lg text-sm bg-slate-50 outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="beesweb">Beesweb</option>
+                        <option value="sgp">SGP</option>
+                        <option value="ixc">IXC Soft</option>
+                        <option value="mcd">MCD (Sistema de Resolução)</option>
+                        <option value="outros">Outros (API Manual)</option>
+                    </select>
+                </div>
+
+              <div>
+    <label id="label-api" class="block text-[10px] font-bold uppercase text-slate-400 mb-1">Token / Chave de API</label>
+    <div class="relative">
+        <input type="password" id="api_key_sistema" 
+            class="w-full border p-2.5 rounded-lg text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none pr-10" 
+            placeholder="Introduza a sua chave secreta">
+       
+    </div>
+    <div class="flex justify-between items-center mt-2">
+        <p id="api_preview" class="text-[10px] text-blue-600 font-mono font-bold"></p>
+        <p class="text-[10px] text-slate-400 leading-relaxed">
+            <i class="fas fa-lock mr-1"></i> Chave protegida por RLS
+        </p>
+    </div>
+</div>
+            </div>
+        </div>
+
+        <div class="mt-8 pt-6 border-t border-slate-100 flex justify-end">
+            <button onclick="salvarConfig()" class="bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg flex items-center">
+                <i class="fas fa-save mr-2"></i> SALVAR CONFIGURAÇÕES
+            </button>
+        </div>
+    </div>
+</section>
 
             <section id="sec-vendas" class="content-section space-y-6">
                 <div class="bg-white p-6 rounded-xl shadow-sm border max-w-4xl">
@@ -317,14 +352,30 @@
     let slugEmpresaLogada = "";
     let intervaloTimer; // Variável global para o timer que você solicitou
 
-    function showSection(id, element) {
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+  function showSection(id, element) {
+    // 1. Limpa o estado ativo de todas as seções e itens da sidebar
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+    
+    // 2. Ativa a seção e o item do menu clicado
+    const targetSection = document.getElementById(id);
+    if (targetSection) {
+        targetSection.classList.add('active');
         element.classList.add('active');
         document.getElementById('sectionTitle').innerText = element.innerText;
+        
+        // 3. ✅ Gatilhos inteligentes ao trocar de aba
+        if (id === 'sec-dados') {
+            // Garante que o label (Token MCD, Beesweb...) esteja certo ao voltar para Dados
+            if (typeof ajustarCamposERP === "function") ajustarCamposERP();
+        }
+        
+        if (id === 'sec-campanhas') {
+            // Recarrega as fotos apenas quando o usuário clica em Campanhas (economiza processamento)
+            if (typeof renderizarMidias === "function") renderizarMidias();
+        }
     }
-
+}
     document.getElementById('loginForm').onsubmit = async (e) => {
         e.preventDefault();
         const login = document.getElementById('email').value.trim();
@@ -348,7 +399,11 @@
         }
     };
 
-    function abrirPainel(data) {
+   function abrirPainel(data) {
+    // 🔍 DIAGNÓSTICO RÁPIDO (Aperte F12 no navegador para ver)
+    console.log("DADOS DO BANCO:", data);
+    console.log("VALOR DA COLUNA erp_token:", data.erp_token);
+
     // 1. Troca de Telas
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('dashboard').classList.remove('hidden');
@@ -359,7 +414,6 @@
     
     // 3. Cabeçalho e Identificação
     document.getElementById('userDisplay').innerText = data.login_usuario;
-    // Unificação conforme sua solicitação: usa o nome da IA no título azul
     document.getElementById('provedorNome').innerText = data.nome_exibicao_ai || "Provedor sem nome";
     
     // 4. Preenchimento da Aba: Dados do Provedor
@@ -367,6 +421,27 @@
     document.getElementById('telefone_contato').value = data.telefone_contato || "";
     document.getElementById('endereco_completo').value = data.endereco_completo || "";
     document.getElementById('erpTipo').value = data.erp_tipo || "beesweb";
+
+    // ✅ TRATAMENTO DO TOKEN E PREVIEW (REVISADO)
+    const token = data.erp_token || "";
+    const inputToken = document.getElementById('api_key_sistema');
+    const preview = document.getElementById('api_preview');
+
+    if (inputToken) {
+        inputToken.value = token;
+        console.log("Input localizado e preenchido com sucesso.");
+    } else {
+        console.error("ERRO: O campo 'api_key_sistema' não foi encontrado no seu HTML.");
+    }
+
+    if (preview) {
+        preview.innerText = token.length > 0 ? "ID: " + token.substring(0, 15) + "••••" : "Chave não configurada";
+    }
+
+    // Ajuste visual das labels (MCD, Beesweb, etc)
+    if (typeof ajustarCamposERP === "function") {
+        ajustarCamposERP();
+    }
     
     // 5. Preenchimento da Aba: Vendas e Planos
     document.getElementById('link_video_demonstracao').value = data.link_video_demonstracao || "";
@@ -377,35 +452,43 @@
     // 6. Preenchimento da Aba: Prompt Agente
     document.getElementById('promptAgente').value = data.prompt_agente || "";
 
-    // 7. ✅ ATUALIZADO: Resumo de Variáveis (Preview Lateral no Prompt)
+    // 7. Resumo de Variáveis (Preview Lateral no Prompt)
     if (document.getElementById('preview-nome')) {
         document.getElementById('preview-nome').innerText = data.nome_exibicao_ai || "(vazio)";
         document.getElementById('preview-telefone').innerText = data.telefone_contato || "(vazio)";
         document.getElementById('preview-link').innerText = data.link_formulario_contratacao || "(vazio)";
         document.getElementById('preview-planos').innerText = data.planos_texto || "Nenhum plano listado";
         
-        // Adicionando o Link do Vídeo no resumo
         if (document.getElementById('preview-video')) {
             document.getElementById('preview-video').innerText = data.link_video_demonstracao || "(sem vídeo)";
         }
     }
+
+    // 8. Carrega a galeria de imagens das campanhas automaticamente
+    if (typeof renderizarMidias === "function") {
+        renderizarMidias();
+    }
 }
 
     async function salvarConfig() {
-        const { error } = await supabaseClient.from('tenants').update({
-            nome_exibicao_ai: document.getElementById('nome_exibicao_ai').value,
-            telefone_contato: document.getElementById('telefone_contato').value,
-            endereco_completo: document.getElementById('endereco_completo').value,
-            erp_tipo: document.getElementById('erpTipo').value,
-            prompt_agente: document.getElementById('promptAgente').value,
-            link_video_demonstracao: document.getElementById('link_video_demonstracao').value,
-            taxa_instalacao: document.getElementById('taxa_instalacao').value,
-            link_formulario_contratacao: document.getElementById('link_formulario_contratacao').value,
-            planos_texto: document.getElementById('planos_texto').value
-        }).eq('id', currentTenantId);
+    const { error } = await supabaseClient.from('tenants').update({
+        nome_exibicao_ai: document.getElementById('nome_exibicao_ai').value,
+        telefone_contato: document.getElementById('telefone_contato').value,
+        endereco_completo: document.getElementById('endereco_completo').value,
+        erp_tipo: document.getElementById('erpTipo').value,
+        
+        // ✅ ADICIONADO: Salva o valor do campo de token na coluna erp_token
+        erp_token: document.getElementById('api_key_sistema').value,
 
-        if (error) alert("Erro ao salvar!"); else alert("Configurações atualizadas!");
-    }
+        prompt_agente: document.getElementById('promptAgente').value,
+        link_video_demonstracao: document.getElementById('link_video_demonstracao').value,
+        taxa_instalacao: document.getElementById('taxa_instalacao').value,
+        link_formulario_contratacao: document.getElementById('link_formulario_contratacao').value,
+        planos_texto: document.getElementById('planos_texto').value
+    }).eq('id', currentTenantId);
+
+    if (error) alert("Erro ao salvar!"); else alert("Configurações atualizadas!");
+}
 
     // ✅ FUNÇÃO DE QR CODE COM TIMER RESTAURADA E MELHORADA
     async function gerarConexaoWhatsApp(event) {
