@@ -74,6 +74,11 @@
                 <div onclick="showSection('sec-conexao', this)" class="sidebar-item p-3 rounded-lg flex items-center">
                     <i class="fab fa-whatsapp w-6"></i> Conexão Zap
                 </div>
+                
+                <div onclick="showSection('sec-chat', this)" class="sidebar-item p-3 rounded-lg flex items-center text-orange-400 font-bold">
+    <i class="fas fa-comments w-6"></i> Atendimento Real
+</div>
+                
                 <div onclick="showSection('sec-campanhas', this)" class="sidebar-item p-3 rounded-lg flex items-center">
     <i class="fas fa-bullhorn w-6"></i> Campanhas e Mídias
 </div>
@@ -337,6 +342,18 @@
                     <p class="text-slate-500 text-sm">Em breve: Gerencie seu pagamento por aqui.</p>
                 </div>
             </section>
+            
+            <section id="sec-chat" class="content-section h-full">
+    <div class="bg-white rounded-xl shadow-sm border h-[calc(100vh-160px)] overflow-hidden">
+        <iframe 
+            id="iframeChatwoot"
+            src="https://chatwoot.vps6993.panel.icontainer.net" 
+            class="w-full h-full border-0"
+            allow="camera; microphone; clipboard-read; clipboard-write; display-capture"
+        ></iframe>
+    </div>
+</section>
+            
 
         </main>
     </div>
@@ -426,6 +443,12 @@
     const token = data.erp_token || "";
     const inputToken = document.getElementById('api_key_sistema');
     const preview = document.getElementById('api_preview');
+    
+    if (data.slug) {
+    const chatUrl = `https://chatwoot.vps6993.panel.icontainer.net/app/accounts/1/dashboard`; 
+    // Dica: Se você tiver o ID da conta do Chatwoot no banco, use data.chatwoot_id no lugar do '1'
+    document.getElementById('iframeChatwoot').src = chatUrl;
+}
 
     if (inputToken) {
         inputToken.value = token;
@@ -882,5 +905,4 @@ function resetBotaoQR() {
 </script>
 </body>
 </html>
-
 
